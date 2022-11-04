@@ -1,48 +1,17 @@
 from flask import Flask, render_template, request, make_response, jsonify
-from flask_sqlalchemy import SQLAlchemy
 import requests
 import time
 
-stats_db = "stats_db"
-user = "stats"
-password = "stats"
+STATS_URL = 'stats'
 
 app = Flask(__name__, instance_relative_config=True)
 
-
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{user}:{password}@{stats_db}/{stats_db}"
-
-db = SQLAlchemy(app)
-
-class Stats(db.Model):
-    service = db.Column(db.String(100), primary_key = True)
-    op = db.Column(db.String(100), primary_key = True)
-    visits = db.Column(db.Integer)
-
-    def __init__(self, service, op, visits = 0):
-        self.service = service
-        self.op = op
-        self.visits = visits
-
-with app.app_context():
-    # retry, it is very slow to init the mysql db
-    for i in range(100):
-        try:
-            db.create_all()
-            print("created tables")
-            break
-        except:
-            time.sleep(5)
-
 # increment the stats for a service and operation
 def update_stats(service, op):
-    with app.app_context():
-        stat = db.session.query(Stats).filter_by(service=service, op=op).first()
-        if stat is None:
-            stat = Stats(service, op)
-        stat.visits += 1
-        db.session.add(stat)
-        db.session.commit()
+    x = requests.post(STATS_URL + f'/{service}/{op}', timeout=10)
+    x.raise_for_status()
+    return x.json()
+
 
 @app.route('/add')
 def add():
