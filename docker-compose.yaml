@@ -1,0 +1,39 @@
+version: '3'
+services:
+  math-service:
+    build: ./math_py
+    container_name: math-service
+    depends_on:
+      - stats_db
+
+  stats-service:
+    build: ./stats_py
+    container_name: stats-service
+    depends_on:
+      - stats_db
+
+  string-service:
+    build: ./string_rust
+    container_name: string-service
+    depends_on:
+      - stats_db
+
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - 5000:5000
+    depends_on:
+      - math-service
+      - string-service
+  
+  stats_db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: 'stats_db'
+      MYSQL_USER: 'stats'
+      MYSQL_PASSWORD: 'stats'
+      MYSQL_ROOT_PASSWORD: 'root_password'
+    ports:
+      # test only
+      - '3306:3306'
